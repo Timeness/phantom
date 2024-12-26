@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phantom Wallet Connect</title>
+  <script src="https://unpkg.com/vue@3"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/solana-web3.js/1.83.1/index.iife.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      display: flex;
+      justify-content: space-between;
+    }
+    .section {
+      width: 45%;
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 5px;
+    }
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+      font-weight: bold;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Phantom Wallet Connect</h1>
+  <div class="container">
+    <!-- Vue Section -->
+    <div id="vue-app" class="section"></div>
+    <!-- React Section -->
+    <div id="react-app" class="section"></div>
+  </div>
+
+  <script>
+    /**
+     * Shared: Get Phantom Provider
+     */
+    const getProvider = () => {
+      if ("solana" in window) {
+        const provider = window.solana;
+        if (provider.isPhantom) return provider;
+      }
+      return null;
+    };
+
+    /**
+     * Vue Application
+     */
+    const VueApp = {
+      data() {
+        return {
+          provider: null,
+          walletKey: null,
+        };
+      },
+      mounted() {
+        this.provider = getProvider();
+      },
+      methods: {
+        async connectWallet() {
+          if (this.provider) {
+            try {
+              const response = await this.provider.connect();
+              this.walletKey = response.publicKey.toString();
+            } catch (err) {
+              console.error("User rejected the request:", err);
+            }
+          }
+        },
+        disconnectWallet() {
+          this.walletKey = null;
+        },
+      },
+      template: `
+        <div>
+          <h2>Vue App</h2>
+          <div v-if="!provider">
+            <p>No provider found. Install <a href="https://phantom.app/" target="_blank">Phantom</a>.</p>
+          </div>
+          <div v-else>
+            <button v-if="!walletKey" @click="connectWallet">Connect Wallet</button>
+            <div v-else>
+              <p>Connected account: {{ walletKey }}</p>
+              <button @click="disconnectWallet">Disconnect Wallet</button>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+
+    Vue.createApp(VueApp).mount("#vue-app");
+
+    /**
+     * React Application
+     */
+    const ReactApp = () => {
+      const [provider, setProvider] = React.useState(null);
+      const [walletKey, setWalletKey] = React.useState(null);
+
+      React.useEffect(() => {
+        setProvider(getProvider());
+      }, []);
+
+      const connectWallet = async () => {
+        if (provider) {
+          try {
+            const response = await provider.connect();
+            setWalletKey(response.publicKey.toString());
+          } catch (err) {
+            console.error("User rejected the request:", err);
+          }
+        }
+      };
+
+      const disconnectWallet = () => {
+        setWalletKey(null);
+      };
+
+      return (
+        <div>
+          <h2>React App</h2>
+          {!provider && (
+            <p>
+              No provider found. Install{" "}
+              <a href="https://phantom.app/" target="_blank">
+                Phantom
+              </a>
+              .
+            </p>
+          )}
+          {provider && !walletKey && (
+            <button onClick={connectWallet}>Connect Wallet</button>
+          )}
+          {provider && walletKey && (
+            <div>
+              <p>Connected account: {walletKey}</p>
+              <button onClick={disconnectWallet}>Disconnect Wallet</button>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById("react-app")).render(<ReactApp />);
+  </script>
+</body>
+</html>
